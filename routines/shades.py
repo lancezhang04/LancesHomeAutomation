@@ -4,7 +4,7 @@ from typing import override
 from entities import Entity
 from home import Home
 from routines import Routine
-from routines.base import TimedRoutine
+from routines.time import TimeRoutine
 
 
 class TimedShade(Routine):
@@ -39,7 +39,7 @@ class TimedShade(Routine):
 
     @override
     def start(self) -> None:
-        self.routine = TimedRoutine(
+        self.routine = TimeRoutine(
             home=self.home,
             service="set_shade_state",
             call_time=self.call_time,
