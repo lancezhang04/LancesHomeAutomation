@@ -1,16 +1,15 @@
-from pydantic import BaseModel
+from dataclasses import dataclass
+from typing import Literal
+
+EntityType = Literal["light", "shade"]
 
 
-# TODO: need to consider what states need to be stored, and how they cna be stored/updated
-"""
-For instance, for a shade, we might want info on whether it's currently open or close.
-However, we can't simply store that value and assume it to be true the next time we need it - 
-there might have been a manual adjustment/system reboot. So how can we retrieve the ground 
-truth value? Would we need access to the adapter class?
-"""
-
-
-class Entity(BaseModel):
+# TODO: decide whether entities should carry state (e.g. is this shade open?). A stored value
+# can't be trusted later (manual adjustment, reboot), so the ground truth has to come from the
+# devices themselves, i.e. through the Home.
+@dataclass(frozen=True)
+class Entity:
+    """A device or group that routines control. `id` is its friendly name in Zigbee2MQTT."""
 
     id: str
-    type: str  # TODO: create enum for this
+    type: EntityType

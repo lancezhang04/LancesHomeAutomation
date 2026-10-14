@@ -1,52 +1,40 @@
+from __future__ import annotations
+
 from datetime import time
-from typing import override
+from typing import TYPE_CHECKING, Literal
 
 from entities import Entity
-from home import Home
-from routines import Routine
 from routines.time import TimeRoutine
 
+if TYPE_CHECKING:
+    from home import Home
 
-class TimedShade(Routine):
+
+class TimedShade(TimeRoutine):
     """
+    Open or close a shade at a given time, on select or all weekdays
+
     Idea: keep shade open/closed throughout the day depending on internal/external
     temperatures to save energy costs?
     """
-
-    shade: Entity  # TODO: change to Shade?
-    call_time: time
-    weekdays: set[int] | None
-    state: str
-
-    routine: Routine
 
     def __init__(
         self,
         home: Home,
         shade: Entity,
         call_time: time,
-        state: str,
+        state: Literal["open", "close"],
         weekdays: set[int] | None = None,
         name: str | None = None,
         description: str | None = None,
     ):
-        self.shade = shade
-        self.call_time = call_time
-        self.state = state
-        self.weekdays = weekdays
-
-        super().__init__(home, name=name, description=description)
-
-    @override
-    def start(self) -> None:
-        self.routine = TimeRoutine(
-            home=self.home,
+        super().__init__(
+            home,
             service="set_shade_state",
-            call_time=self.call_time,
-            weekdays=self.weekdays,
-            entities=self.shade,
-            call_kwargs={"state": self.state},
-            name=f"Timed shade {self.state} subroutine",
-            description=f"Spawned by [{self.name}, TimedShade]",
+            call_time=call_time,
+            entities=shade,
+            weekdays=weekdays,
+            call_kwargs={"state": state},
+            name=name,
+            description=description,
         )
-        self.routine.start()

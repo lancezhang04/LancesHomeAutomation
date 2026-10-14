@@ -1,14 +1,23 @@
-from datetime import time, datetime, timedelta
+from __future__ import annotations
+
+from datetime import date, datetime, time
+from typing import TYPE_CHECKING, override
 
 from entities import Entity
-from home import Home
-from routines import Routine
+from routines.base import Routine
+
+if TYPE_CHECKING:
+    from home import Home
+
+
+def _seconds_between(start: time, end: time) -> float:
+    return (datetime.combine(date.min, end) - datetime.combine(date.min, start)).total_seconds()
 
 
 class TransitionRoutine(Routine):
     """
     Call a service with a range of values in a given time period,
-    on select or all weekdays
+    on select or all weekdays (Monday is 0)
 
     This is useful for routines such as fading in and out lights
     """
@@ -17,13 +26,12 @@ class TransitionRoutine(Routine):
     end_time: time
     start_value: float
     end_value: float
-    interval: float
     rounding: str | None
     weekdays: set[int] | None
 
     service: str
     arg_name: str
-    entities: Entity | list[Entity] | None
+    entities: Entity | list[Entity]
 
     def __init__(
         self,
@@ -34,7 +42,7 @@ class TransitionRoutine(Routine):
         start_value: float,
         end_value: float,
         arg_name: str,
-        entities: Entity | list[Entity] | None,
+        entities: Entity | list[Entity],
         rounding: str | None = None,
         weekdays: set[int] | None = None,
         name: str | None = None,
@@ -55,34 +63,21 @@ class TransitionRoutine(Routine):
         self.rounding = rounding
         self.weekdays = weekdays
 
-        # TODO: how to better take different between time?
-        self.interval = timedelta(
-            hours=self.end_time.hour - self.start_time.hour,
-            minutes=self.end_time.minute - self.start_time.minute,
-        ).seconds
-
         super().__init__(home, name=name, description=description)
 
+    @override
     def on_time_change(self, current_time: datetime) -> None:
-        if self.weekdays is None or current_time.weekday() in self.weekdays:
-            timestamp = current_time.time()
-            if self.start_time <= timestamp <= self.end_time:
-                elapsed = timedelta(
-                    hours=timestamp.hour - self.start_time.hour,
-                    minutes=timestamp.minute - self.start_time.minute,
-                ).seconds
+        if self.weekdays is not None and current_time.weekday() not in self.weekdays:
+            return
+        timestamp = current_time.time()
+        if not self.start_time <= timestamp <= self.end_time:
+            return
 
-                current_value = (
-                    elapsed / self.interval * (self.end_value - self.start_value)
-                    + self.start_value
-                )
-                if self.rounding == "int":
-                    current_value = round(current_value)
+        progress = _seconds_between(self.start_time, timestamp) / _seconds_between(
+            self.start_time, self.end_time
+        )
+        current_value = self.start_value + progress * (self.end_value - self.start_value)
+        if self.rounding == "int":
+            current_value = round(current_value)
 
-                self.home.call(
-                    service=self.service,
-                    entities=self.entities,
-                    call_kwargs={
-                        self.arg_name: current_value,
-                    },
-                )
+        self.home.call(self.service, self.entities, **{self.arg_name: current_value})

@@ -1,11 +1,15 @@
-from datetime import time
-from typing import override
+from __future__ import annotations
+
+from datetime import datetime, time
+from typing import TYPE_CHECKING, Any, override
 
 from entities import Entity
-from home import Home
-from routines import Routine
+from routines.base import Routine
 from routines.time import TimeRoutine
 from routines.transition import TransitionRoutine
+
+if TYPE_CHECKING:
+    from home import Home
 
 
 class TimedLight(Routine):
@@ -15,14 +19,8 @@ class TimedLight(Routine):
     soon after we turn it on (e.g., on a weekday morning)
     """
 
-    light: Entity  # TODO: change to light entity?
-    start_time: time | None
-    end_time: time | None
-    weekdays: set[int] | None
-
-    # TODO: Either make this timedelta based (for end time), or just a single call
-    start_subroutine: TimeRoutine | None
-    end_subroutine: TimeRoutine | None
+    light: Entity
+    steps: list[TimeRoutine]
 
     def __init__(
         self,
@@ -31,65 +29,40 @@ class TimedLight(Routine):
         start_time: time | None = None,
         end_time: time | None = None,
         weekdays: set[int] | None = None,
+        intensity: float | None = None,
         name: str | None = None,
         description: str | None = None,
     ) -> None:
         if start_time is None and end_time is None:
             raise ValueError("Either start_time or end_time is required")
 
-        self.light = light
-        self.start_time = start_time
-        self.end_time = end_time
-        self.weekdays = weekdays
-
         super().__init__(home, name=name, description=description)
+        self.light = light
+        self.steps = []
+
+        if start_time is not None:
+            on_kwargs: dict[str, Any] = {"state": "on"}
+            if intensity is not None:
+                on_kwargs["intensity"] = intensity
+            self.steps.append(
+                TimeRoutine(home, "set_light_state", start_time, light, weekdays, on_kwargs)
+            )
+        if end_time is not None:
+            self.steps.append(
+                TimeRoutine(home, "set_light_state", end_time, light, weekdays, {"state": "off"})
+            )
 
     @override
-    def start(self) -> None:
-        if self.start_time is not None:
-            self.start_subroutine = TimeRoutine(
-                home=self.home,
-                service="set_light_state",
-                call_time=self.start_time,
-                weekdays=self.weekdays,
-                entities=self.light,
-                call_kwargs={"state": "on", "intensity": 100},
-                # TODO: consider if "subroutine" is a good name
-                name="Timed light on subroutine",
-                description=f"Spawned by [{self.name}, TimedLight]",
-            )
-            self.start_subroutine.start()
-
-        if self.end_time is not None:
-            self.end_subroutine = TimeRoutine(
-                home=self.home,
-                service="set_light_state",
-                call_time=self.end_time,
-                weekdays=self.weekdays,
-                entities=self.light,
-                call_kwargs={"state": "off"},
-                name="Timed light off subroutine",
-                description=f"Spawned by [{self.name}, TimedLight]",
-            )
-            self.end_subroutine.start()
+    def on_time_change(self, current_time: datetime) -> None:
+        for step in self.steps:
+            step.on_time_change(current_time)
 
 
-class TransitionLight(Routine):
+class TransitionLight(TransitionRoutine):
     """
     Fade/transition the intensity of a light over a given period of time,
     on select or all weekdays
     """
-
-    light: Entity
-    start_time: time
-    end_time: time
-    start_intensity: float
-    end_intensity: float
-    weekdays: set[int] | None
-    name: str
-    description: str
-
-    subroutine: TransitionRoutine
 
     def __init__(
         self,
@@ -103,28 +76,16 @@ class TransitionLight(Routine):
         name: str | None = None,
         description: str | None = None,
     ):
-        self.light = light
-        self.start_time = start_time
-        self.end_time = end_time
-        self.start_intensity = start_intensity
-        self.end_intensity = end_intensity
-        self.weekdays = weekdays
-
-        super().__init__(home, name=name, description=description)
-
-    @override
-    def start(self) -> None:
-        self.subroutine = TransitionRoutine(
-            home=self.home,
+        super().__init__(
+            home,
             service="set_light_state",
-            start_time=self.start_time,
-            end_time=self.end_time,
-            start_value=self.start_intensity,
-            end_value=self.end_intensity,
+            start_time=start_time,
+            end_time=end_time,
+            start_value=start_intensity,
+            end_value=end_intensity,
             arg_name="intensity",
-            entities=self.light,
-            weekdays=self.weekdays,
-            name="Transition light subroutine",
-            description=f"Spawned by [{self.name}, TransitionLight]",
+            entities=light,
+            weekdays=weekdays,
+            name=name,
+            description=description,
         )
-        self.subroutine.start()

@@ -1,17 +1,18 @@
-from datetime import datetime
-from typing import Any
+from __future__ import annotations
 
-from home import Home
+from datetime import datetime
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from home import Home
 
 
 class Routine:
 
-    # TODO: change typing to include real HOME adapter
     home: Home
     name: str | None
     description: str | None
 
-    # TODO: should we even specify a return type here?
     def __init__(
         self,
         home: Home,

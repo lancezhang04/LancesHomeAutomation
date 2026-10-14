@@ -1,29 +1,32 @@
-from datetime import datetime, timedelta
+from __future__ import annotations
 
-from entities.base import Entity
-from typing import override
+from dataclasses import dataclass
+from datetime import datetime, timedelta
+from typing import TYPE_CHECKING, Any, override
+
+from entities import Entity
+
+if TYPE_CHECKING:
+    from routines import Routine
+
+
+def as_list(entities: Entity | list[Entity]) -> list[Entity]:
+    return entities if isinstance(entities, list) else [entities]
 
 
 class Home:
+    """Holds the running routines and carries out the service calls they make."""
 
-    # TODO: Dictionary mapping entity ID to entities
-    entities: dict[str, Entity]
-    routines: list[...]
+    routines: list[Routine]
 
-    def __init__(self, config_path: str) -> None:
-        self.entities = dict()
-        self.routines = list()
-
-        # TODO: use config to load entities (and possibly routines)
+    def __init__(self) -> None:
+        self.routines = []
 
     def on_time_change(self, current_time: datetime) -> None:
         for routine in self.routines:
             routine.on_time_change(current_time)
 
-    # TODO: Not exactly sure how to structure this yet
-    def call(
-        self, service: str, entities: Entity | list[Entity] | None, **kwargs
-    ) -> None:
+    def call(self, service: str, entities: Entity | list[Entity], **kwargs: Any) -> None:
         raise NotImplementedError
 
     def describe_routines(self) -> None:
@@ -38,23 +41,34 @@ class Home:
             print(f"{no_doc_count} routine(s) without name or description\n")
 
 
-# TODO: make pytest fixture (?), e.g. to check calls
+@dataclass(frozen=True)
+class Call:
+    time: datetime
+    service: str
+    entities: list[Entity]
+    kwargs: dict[str, Any]
+
+
 class FakeHome(Home):
+    """Records service calls instead of making them, for replaying routines on a simulated clock."""
 
     current_time: datetime
+    calls: list[Call]
 
-    def __init__(self, config_path: str, start_time: datetime | None) -> None:
+    def __init__(self, start_time: datetime | None = None, verbose: bool = True) -> None:
+        super().__init__()
         self.current_time = start_time if start_time is not None else datetime.now()
-
-        super().__init__(config_path)
+        self.calls = []
+        self.verbose = verbose
 
     def tick(self, tick_size: timedelta = timedelta(minutes=1)) -> None:
         self.current_time += tick_size
         self.on_time_change(self.current_time)
 
     @override
-    def call(
-        self, service: str, entities: Entity | list[Entity] | None, **kwargs
-    ) -> None:
-        # TODO: how does vim surround work again lol
-        print(f"[{self.current_time}] {service} | {entities} | {kwargs}")
+    def call(self, service: str, entities: Entity | list[Entity], **kwargs: Any) -> None:
+        call = Call(self.current_time, service, as_list(entities), kwargs)
+        self.calls.append(call)
+        if self.verbose:
+            names = ", ".join(entity.id for entity in call.entities)
+            print(f"[{call.time:%a %H:%M}] {service} | {names} | {kwargs}")
