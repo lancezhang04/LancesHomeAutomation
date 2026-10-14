@@ -7,6 +7,7 @@ from datetime import datetime, time
 from home import FakeHome
 from entities import Entity
 from routines.lights import TransitionLight
+from routines.shades import TimedShade
 
 home = FakeHome(
     config_path="",
@@ -44,14 +45,14 @@ TransitionLight(
 #     description="Two hours later than usual",
 # ).start()
 #
-# TimedShade(
-#     home=home,
-#     shade=Entity(id="test_shade", type="shade"),
-#     call_time=time(7, 0),
-#     weekdays={0, 1, 2, 3, 4},
-#     state="open",
-#     name="Weekday morning shade",
-# ).start()
+TimedShade(
+    home=home,
+    shade=Entity(id="test_shade", type="shade"),
+    call_time=time(7, 0),
+    weekdays={0, 1, 2, 3, 4},
+    state="open",
+    name="Weekday morning shade",
+).start()
 
 home.describe_routines()
 

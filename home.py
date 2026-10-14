@@ -38,6 +38,7 @@ class Home:
             print(f"{no_doc_count} routine(s) without name or description\n")
 
 
+# TODO: make pytest fixture (?), e.g. to check calls
 class FakeHome(Home):
 
     current_time: datetime
