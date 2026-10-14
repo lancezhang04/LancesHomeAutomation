@@ -1,0 +1,15 @@
+#!/bin/sh
+# Blocks commits that would put a secret into the Zigbee2MQTT config. This repo is public; secrets
+# belong in ~/zigbee2mqtt/data/secret.yaml, referenced from the config as '!secret <name>'.
+# Enabled by hub/install.sh (git config core.hooksPath hub/git-hooks).
+
+config=hub/zigbee2mqtt/configuration.yaml
+git diff --cached --name-only | grep -qx "$config" || exit 0
+
+leaks=$(git show ":$config" | grep -nE '^ *(network_key|auth_token|password):' | grep -v "'!secret ")
+if [ -n "$leaks" ]; then
+  echo "pre-commit: $config has a secret that isn't a '!secret' reference:" >&2
+  echo "$leaks" >&2
+  echo "Move the value into ~/zigbee2mqtt/data/secret.yaml and reference it as '!secret <name>'." >&2
+  exit 1
+fi

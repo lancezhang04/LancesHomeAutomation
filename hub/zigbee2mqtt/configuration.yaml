@@ -1,0 +1,40 @@
+version: 5
+homeassistant:
+  enabled: false
+frontend:
+  enabled: true
+  port: 8080
+  host: 127.0.0.1
+mqtt:
+  base_topic: zigbee2mqtt
+  server: mqtt://localhost
+serial:
+  port: /dev/cu.usbserial-1130
+  adapter: ember
+advanced:
+  channel: 25
+  network_key: '!secret network_key'
+  pan_id: 33305
+  ext_pan_id:
+    - 11
+    - 182
+    - 176
+    - 6
+    - 126
+    - 137
+    - 157
+    - 240
+  log_output:
+    - file
+devices:
+  '0xa81710b8efda0000':
+    friendly_name: kitchen_lamp
+  '0xa81710b881310000':
+    friendly_name: main_lamp
+  '0xa81710b8e39e0000':
+    friendly_name: corner_lamp
+  '0xe07291fffe4efa73':
+    friendly_name: main_switch
+groups:
+  '1':
+    friendly_name: all_lamps

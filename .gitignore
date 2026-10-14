@@ -1,2 +1,11 @@
 .idea/
+.DS_Store
 __pycache__/
+.pytest_cache/
+.venv/
+
+# Zigbee secrets live in ~/zigbee2mqtt/data/secret.yaml, never in this repo
+secret.yaml
+# Temporary copies Zigbee2MQTT makes while loading extensions
+hub/zigbee2mqtt/external_extensions/.tmp-*
+hub/zigbee2mqtt/external_extensions/node_modules
