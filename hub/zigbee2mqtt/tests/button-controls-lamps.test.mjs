@@ -61,7 +61,25 @@ test("double press turns the off lamps on one at a time, with 250-750 ms between
     }
 });
 
-test("double press skips lamps that are already on", () => {
+test("double press with every lamp on turns them all off 20 s later", () => {
+    setup({kitchen_lamp: "ON", main_lamp: "ON", corner_lamp: "ON"});
+    press("double");
+    mock.timers.tick(19_999);
+    assert.deepEqual(sent, []);
+    mock.timers.tick(1);
+    assert.deepEqual(sent, [{at: 20_000, topic: "zigbee2mqtt/all_lamps/set", state: "OFF"}]);
+});
+
+test("any press cancels the delayed off", () => {
+    setup({kitchen_lamp: "ON", main_lamp: "ON", corner_lamp: "ON"});
+    press("double");
+    mock.timers.tick(5_000);
+    press("single"); // every lamp is on, so this turns them off right away
+    mock.timers.tick(60_000);
+    assert.deepEqual(sent, [{at: 5_000, topic: "zigbee2mqtt/all_lamps/set", state: "OFF"}]);
+});
+
+test("double press with only some lamps on turns on the rest one by one", () => {
     setup({kitchen_lamp: "ON", main_lamp: "OFF", corner_lamp: "ON"});
     press("double");
     mock.timers.tick(10_000);

@@ -10,7 +10,7 @@ Sonoff ZBDongle-E ─ Zigbee2MQTT ─ Mosquitto (MQTT) ─ run_home.py (routines
 - **Zigbee2MQTT** (installed in `~/zigbee2mqtt`) talks to the dongle and the devices. Its config and extensions live in `hub/zigbee2mqtt/` and are symlinked into place.
 - **Mosquitto** is the local message broker, reachable only from this Mac.
 - **`run_home.py`** runs the routines in [automations.py](automations.py) on the real clock and sends commands through MQTT.
-- **The button** is handled by [button-controls-lamps.mjs](hub/zigbee2mqtt/external_extensions/button-controls-lamps.mjs), which runs inside Zigbee2MQTT. The Sonoff SNZB-01P can't be bound directly to a group, so Zigbee2MQTT relays its presses instead. Single press: all lamps off if any are on, otherwise all on. Double: the lamps that are off turn on one by one in random order, 0.25–0.75 s apart. Long: all off. It's also editable in the web UI under Settings → Dev console → External Extensions.
+- **The button** is handled by [button-controls-lamps.mjs](hub/zigbee2mqtt/external_extensions/button-controls-lamps.mjs), which runs inside Zigbee2MQTT. The Sonoff SNZB-01P can't be bound directly to a group, so Zigbee2MQTT relays its presses instead. Single press: all lamps off if any are on, otherwise all on. Double: if every lamp is on, all off after 20 seconds; otherwise the lamps that are off turn on one by one in random order, 0.25–0.75 s apart. Long: all off. Any press cancels whatever an earlier double press still has scheduled. It's also editable in the web UI under Settings → Dev console → External Extensions.
 
 ## Layout
 
