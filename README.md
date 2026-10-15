@@ -10,7 +10,7 @@ Sonoff ZBDongle-E ─ Zigbee2MQTT ─ Mosquitto (MQTT) ─ run_home.py (routines
 - **Zigbee2MQTT** (installed in `~/zigbee2mqtt`) talks to the dongle and the devices. Its config and extensions live in `hub/zigbee2mqtt/` and are symlinked into place.
 - **Mosquitto** is the local message broker, reachable only from this Mac.
 - **`run_home.py`** runs the routines in [automations.py](automations.py) on the real clock and sends commands through MQTT.
-- **The button** is handled by [button-controls-lamps.mjs](hub/zigbee2mqtt/external_extensions/button-controls-lamps.mjs), which runs inside Zigbee2MQTT. The Sonoff SNZB-01P can't be bound directly to a group, so Zigbee2MQTT relays its presses instead. Single press: all lamps off if any are on, otherwise all on. Double: all on. Long: all off. It's also editable in the web UI under Settings → Dev console → External Extensions.
+- **The button** is handled by [button-controls-lamps.mjs](hub/zigbee2mqtt/external_extensions/button-controls-lamps.mjs), which runs inside Zigbee2MQTT. The Sonoff SNZB-01P can't be bound directly to a group, so Zigbee2MQTT relays its presses instead. Single press: all lamps off if any are on, otherwise all on. Double: the lamps that are off turn on one by one in random order, 0.25–0.75 s apart. Long: all off. It's also editable in the web UI under Settings → Dev console → External Extensions.
 
 ## Layout
 
@@ -53,6 +53,20 @@ launchctl kickstart -k gui/$(id -u)/com.lanceshomeautomation.routines
 ```
 
 (Install the test dependencies once with `.venv/bin/pip install -r requirements-dev.txt`.)
+
+## Changing the button
+
+Edit [button-controls-lamps.mjs](hub/zigbee2mqtt/external_extensions/button-controls-lamps.mjs), then test it and restart Zigbee2MQTT to load it:
+
+```bash
+/opt/homebrew/opt/node@24/bin/node --test 'hub/zigbee2mqtt/tests/*.test.mjs'
+```
+
+```bash
+launchctl kickstart -k gui/$(id -u)/com.zigbee2mqtt
+```
+
+Keep test files out of `external_extensions/`: Zigbee2MQTT loads every script in that folder as an extension.
 
 ## Changes made in the web UI
 
